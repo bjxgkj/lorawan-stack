@@ -17,6 +17,7 @@ package io
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -35,8 +36,14 @@ const (
 	bufferSize = 1 << 4
 
 	maxRTTs = 20
-	rttTTL  = 30 * time.Minute
 )
+
+var rttTTL = func() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv("TTN_LW_EXP_RTT_TTL")); err == nil {
+		return d
+	}
+	return 30 * time.Minute
+}()
 
 // Frontend provides supported features by the gateway frontend.
 type Frontend interface {

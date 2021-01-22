@@ -15,6 +15,8 @@
 package io
 
 import (
+	"fmt"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -48,6 +50,7 @@ func (r *rtts) Record(d time.Duration, t time.Time) {
 		r.items = append(r.items[:0], r.items[1:]...)
 	}
 	r.mu.Unlock()
+	fmt.Fprintln(os.Stdout, "#3487", "Record:", d, "at", t)
 }
 
 // Last returns the last measured round-trip time.
@@ -75,6 +78,7 @@ func (r *rtts) Stats(percentile int, ref time.Time) (min, max, median, np time.D
 		return
 	}
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].d < sorted[j].d })
+	fmt.Fprintln(os.Stdout, "#3487", "Stats:", "sorted items:", sorted)
 	min = sorted[0].d
 	max = sorted[len(sorted)-1].d
 	if l := len(sorted); l%2 == 0 {

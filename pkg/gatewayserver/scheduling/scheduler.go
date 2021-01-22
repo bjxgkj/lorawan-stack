@@ -16,8 +16,11 @@ package scheduling
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"os"
 	"runtime/trace"
+	"strconv"
 	"sync"
 	"time"
 
@@ -47,7 +50,12 @@ var (
 
 	// scheduleMinRTTCount is the minimum number of observed round-trip times that are taken into account before using
 	// using their statistics for calculating an absolute time or determining whether scheduling is too late.
-	scheduleMinRTTCount = 5
+	scheduleMinRTTCount = func() int {
+		if count, err := strconv.ParseInt(os.Getenv("TTN_LW_EXP_SCHEDULE_MIN_RTT_COUNT"), 10, 32); err == nil {
+			return int(count)
+		}
+		return 5
+	}()
 
 	// scheduleLateRTTPercentile is the percentile of round-trip times that is considered for determining whether
 	// scheduling is too late.
@@ -297,7 +305,12 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, err
 		if _, _, median, np, n := opts.RTTs.Stats(scheduleLateRTTPercentile, s.timeSource.Now()); n >= scheduleMinRTTCount {
 			minScheduleTime = np/2 + QueueDelay
 			medianRTT = &median
+			fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "median is", median)
+		} else {
+			fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "too few round trip times:", n, "<", scheduleMinRTTCount)
 		}
+	} else {
+		fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "no round trip times available")
 	}
 	var starts ConcentratorTime
 	now, ok := s.clock.FromServerTime(s.timeSource.Now())
@@ -310,8 +323,10 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, err
 				if !ok {
 					return Emission{}, errNoServerTime.New()
 				}
+				fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "use median", *medianRTT)
 				starts = serverTime - ConcentratorTime(*medianRTT/2)
 			} else {
+				fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "no absolute gateway time")
 				return Emission{}, errNoAbsoluteGatewayTime.New()
 			}
 		}
