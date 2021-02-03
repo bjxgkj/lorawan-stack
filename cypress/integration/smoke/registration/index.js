@@ -40,7 +40,6 @@ const loginConsole = defineSmokeTest('succeeds registering and logging into the 
     'findInStackLog',
     `Your email address will be used as contact for user "${user.user_id}"`,
   ).then(validationUri => {
-    // eslint-disable-next-line jest/valid-expect, no-unused-expressions
     expect(validationUri).to.not.be.empty
   })
 
@@ -83,7 +82,6 @@ const loginAccountApp = defineSmokeTest(
       'findInStackLog',
       `Your email address will be used as contact for user "${user.user_id}"`,
     ).then(validationUri => {
-      // eslint-disable-next-line jest/valid-expect, no-unused-expressions
       expect(validationUri).to.not.be.empty
     })
 
