@@ -22,6 +22,7 @@ import (
 	"runtime/trace"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/band"
@@ -86,9 +87,13 @@ var (
 	errFrequencyPlansOverlapSubBand = errors.DefineInvalidArgument("frequency_plans_overlap_sub_band", "frequency plans must not have overlapping sub bands")
 )
 
+var id uint32
+
 // NewScheduler instantiates a new Scheduler for the given frequency plan.
 // If no time source is specified, the system time is used.
 func NewScheduler(ctx context.Context, fps map[string]*frequencyplans.FrequencyPlan, enforceDutyCycle bool, scheduleAnytimeDelay *time.Duration, timeSource TimeSource) (*Scheduler, error) {
+	id := atomic.AddUint32(&id, 1)
+
 	logger := log.FromContext(ctx)
 	if timeSource == nil {
 		timeSource = SystemTimeSource
@@ -117,6 +122,7 @@ func NewScheduler(ctx context.Context, fps map[string]*frequencyplans.FrequencyP
 	}
 
 	s := &Scheduler{
+		ID:                   id,
 		clock:                &RolloverClock{},
 		timeOffAir:           *toa,
 		fps:                  fps,
@@ -189,6 +195,7 @@ func NewScheduler(ctx context.Context, fps map[string]*frequencyplans.FrequencyP
 
 // Scheduler is a packet scheduler that takes time conflicts and sub-band restrictions into account.
 type Scheduler struct {
+	ID                   uint32
 	clock                *RolloverClock
 	fps                  map[string]*frequencyplans.FrequencyPlan
 	timeOffAir           frequencyplans.TimeOffAir
@@ -305,12 +312,12 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, err
 		if _, _, median, np, n := opts.RTTs.Stats(scheduleLateRTTPercentile, s.timeSource.Now()); n >= scheduleMinRTTCount {
 			minScheduleTime = np/2 + QueueDelay
 			medianRTT = &median
-			fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "median is", median)
+			fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "median is", median)
 		} else {
-			fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "too few round trip times:", n, "<", scheduleMinRTTCount)
+			fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "too few round trip times:", n, "<", scheduleMinRTTCount)
 		}
 	} else {
-		fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "no round trip times available")
+		fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "no round trip times available")
 	}
 	var starts ConcentratorTime
 	now, ok := s.clock.FromServerTime(s.timeSource.Now())
@@ -323,24 +330,29 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, err
 				if !ok {
 					return Emission{}, errNoServerTime.New()
 				}
-				fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "use median", *medianRTT)
+				fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "use median", *medianRTT)
 				starts = serverTime - ConcentratorTime(*medianRTT/2)
 			} else {
-				fmt.Fprintln(os.Stdout, "#3487", "ScheduleAt:", "no absolute gateway time")
+				fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "no absolute gateway time")
 				return Emission{}, errNoAbsoluteGatewayTime.New()
 			}
+		} else {
+			fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "absolute start time is", starts)
 		}
 		// Assume that the absolute time is the time of arrival, not time of transmission.
 		toa, err := toa.Compute(opts.PayloadSize, opts.TxSettings)
 		if err != nil {
+			fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "no time-on-air:", err)
 			return Emission{}, err
 		}
 		starts -= ConcentratorTime(toa)
 	} else {
 		starts = s.clock.FromTimestampTime(opts.Timestamp)
+		fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "relative time downlink")
 	}
 	if ok {
 		if delta := time.Duration(starts - now); delta < minScheduleTime {
+			fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "too late:", delta)
 			return Emission{}, errTooLate.WithAttributes("delta", delta)
 		}
 	}
@@ -354,13 +366,16 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, err
 	}
 	for _, other := range s.emissions {
 		if em.OverlapsWithOffAir(other, s.timeOffAir) {
+			fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "conflict")
 			return Emission{}, errConflict.New()
 		}
 	}
 	if err := sb.Schedule(em, opts.Priority); err != nil {
+		fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "schedule:", err)
 		return Emission{}, err
 	}
 	s.emissions = s.emissions.Insert(em)
+	fmt.Fprintln(os.Stdout, "#3487", s.ID, "ScheduleAt:", "scheduled")
 	return em, nil
 }
 

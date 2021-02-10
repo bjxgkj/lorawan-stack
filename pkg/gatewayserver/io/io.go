@@ -30,6 +30,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/scheduling"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 const (
@@ -146,6 +147,9 @@ func NewConnection(ctx context.Context, frontend Frontend, gateway *ttnpb.Gatewa
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Fprintln(os.Stdout, "#3487", scheduler.ID, "is", unique.ID(ctx, gateway.GatewayIdentifiers))
+
 	return &Connection{
 		ctx:       ctx,
 		cancelCtx: cancelCtx,
