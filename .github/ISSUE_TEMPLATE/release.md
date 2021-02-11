@@ -103,6 +103,19 @@ This is a checklist for releases. This is filled in by both the releaser and the
   $ git push origin ${version}
   ```
 
+#### Update Documentation
+
+- [ ] Update the [documentation version](https://github.com/TheThingsIndustries/lorawan-stack-docs/blob/master/doc/config/_default/config.toml#L28) to match the current minor, if necessary (`v3.${minor}`).
+- [ ] Run `mage ttiProto:hugoData` from [TheThingsIndustries/lorawan-stack](https://github.com/TheThingsIndustries/lorawan-stack), and copy the generated files to the [TheThingsIndustries/lorawan-stack-docs](https://github.com/TheThingsIndustries/lorawan-stack-docs).
+    ```
+    doc/data/api/tti.lorawan.v3/messages.yml
+    doc/data/api/tti.lorawan.v3/services.yml
+    doc/data/api/tti.lorawan.v3/enums.yml
+    doc/data/api/ttn.lorawan.v3/messages.yml
+    doc/data/api/ttn.lorawan.v3/services.yml
+    doc/data/api/ttn.lorawan.v3/enums.yml
+    ```
+
 #### Post Release
 
 - [ ] Edit the release notes on the Github releases page, which is typically copied from `CHANGELOG.md`.
@@ -118,3 +131,5 @@ This is a checklist for releases. This is filled in by both the releaser and the
 
 - [ ] The new release contains only the intended commits. This can be checked using `https://github.com/TheThingsNetwork/lorawan-stack/compare/v<previous-version>...v<current-version>`
 - [ ] The Docker latest tag is up to date.
+- [ ] The documentation version is up to date.
+- [ ] The TTI and TTN API documentation has been generated and updated in [doc/data/api](https://github.com/TheThingsIndustries/lorawan-stack-docs/blob/master/doc/data/api).
