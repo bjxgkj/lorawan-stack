@@ -29,7 +29,7 @@ import FormContext from '../context'
 
 import style from './field.styl'
 
-export function getPassThroughProps(props, excludeProps) {
+export const getPassThroughProps = (props, excludeProps) => {
   const rest = {}
   for (const property of Object.keys(props)) {
     if (!excludeProps[property]) {
@@ -39,7 +39,7 @@ export function getPassThroughProps(props, excludeProps) {
   return rest
 }
 
-const isValueEmpty = function(value) {
+const isValueEmpty = value => {
   if (value === null || value === undefined) {
     return true
   }
@@ -59,6 +59,7 @@ class FormField extends React.Component {
   static contextType = FormContext
 
   static propTypes = {
+    autoWidth: PropTypes.bool,
     className: PropTypes.string,
     component: PropTypes.oneOfType([
       PropTypes.func,
@@ -82,6 +83,7 @@ class FormField extends React.Component {
   }
 
   static defaultProps = {
+    autoWidth: false,
     className: undefined,
     disabled: false,
     encode: value => value,
@@ -163,6 +165,7 @@ class FormField extends React.Component {
 
   render() {
     const {
+      autoWidth,
       className,
       decode,
       name,
@@ -224,6 +227,7 @@ class FormField extends React.Component {
     ) : null
 
     const fieldComponentProps = {
+      autoWidth,
       value: fieldValue,
       error: showError,
       warning: showWarning,

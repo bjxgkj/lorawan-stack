@@ -318,6 +318,9 @@ input-width-classes()
   &.input-width-full
     max-width: none
 
+  for i in range(2rem, 40rem, 2)
+    &.input-width-rem-{i}
+      max-width: i
 
 // RESETS
 // ======

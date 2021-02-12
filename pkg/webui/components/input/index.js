@@ -44,6 +44,7 @@ class Input extends React.Component {
       'url',
       'username',
     ]),
+    autoWidth: PropTypes.bool,
     className: PropTypes.string,
     code: PropTypes.bool,
     component: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
@@ -57,6 +58,7 @@ class Input extends React.Component {
     }).isRequired,
     label: PropTypes.string,
     loading: PropTypes.bool,
+    max: PropTypes.number,
     onBlur: PropTypes.func,
     onChange: PropTypes.func,
     onEnter: PropTypes.func,
@@ -71,6 +73,7 @@ class Input extends React.Component {
   }
 
   static defaultProps = {
+    autoWidth: false,
     action: undefined,
     autoComplete: 'off',
     className: undefined,
@@ -82,6 +85,7 @@ class Input extends React.Component {
     icon: undefined,
     label: undefined,
     loading: false,
+    max: undefined,
     onFocus: () => null,
     onBlur: () => null,
     onChange: () => null,
@@ -120,6 +124,7 @@ class Input extends React.Component {
 
   render() {
     const {
+      autoWidth,
       icon,
       value,
       error,
@@ -150,8 +155,11 @@ class Input extends React.Component {
     const { focus } = this.state
 
     let Component = component
+    let autoWidthValue
     if (type === 'byte') {
       Component = ByteInput
+      const { max } = this.props
+      autoWidthValue = max ? `rem-${max * 2}` : 'full'
     } else if (type === 'textarea') {
       Component = 'textarea'
     }
@@ -168,17 +176,20 @@ class Input extends React.Component {
 
     const v = valid && (Component.validate ? Component.validate(value, this.props) : true)
     const hasAction = Boolean(action)
-
-    const inputCls = classnames(style.inputBox, style[`input-width-${inputWidth}`], {
-      [style.focus]: focus,
-      [style.error]: error,
-      [style.readOnly]: readOnly,
-      [style.warn]: !error && warning,
-      [style.disabled]: disabled,
-      [style.code]: code,
-      [style.actionable]: hasAction,
-      [style.textarea]: type === 'textarea',
-    })
+    const inputCls = classnames(
+      style.inputBox,
+      style[`input-width-${(autoWidth && autoWidthValue) || inputWidth}`],
+      {
+        [style.focus]: focus,
+        [style.error]: error,
+        [style.readOnly]: readOnly,
+        [style.warn]: !error && warning,
+        [style.disabled]: disabled,
+        [style.code]: code,
+        [style.actionable]: hasAction,
+        [style.textarea]: type === 'textarea',
+      },
+    )
 
     return (
       <div className={classnames(className, style.container)}>

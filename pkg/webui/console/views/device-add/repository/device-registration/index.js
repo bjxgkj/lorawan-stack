@@ -101,6 +101,7 @@ const Registration = props => {
             glossaryId={glossaryId.DEV_EUI}
           />
           <Form.Field
+            autoWidth
             required
             title={sharedMessages.appKey}
             name="root_keys.app_key.key"
